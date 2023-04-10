@@ -194,7 +194,11 @@ server <- function(input, output) {
     podsearch_df %>% 
       ggplot(aes(x = number_episodes)) +
       geom_histogram(fill = "#A64EFF",
-                     color = "#F2EDF9")
+                     color = "#F2EDF9") +
+      labs(title = "How many episodes does the average Podcast have?",
+           x = "Number of Episodes",
+           y = "Number of Podcasts") +
+      theme(text = element_text(size = 15, family = "mono", face = "bold"))
   })
   
   output$word_plot <- renderWordcloud2({
