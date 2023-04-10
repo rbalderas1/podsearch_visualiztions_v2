@@ -66,12 +66,6 @@ ui <- fluidPage(
                             width: 100px;
                             border-radius: 50%;
                             border: 2px solid #A64EFF;
-                            }
-                            img {
-                            width: 100%;
-                            height: auto;
-                            padding-bottom: 15px;
-                            padding-top: 15px;
                             }'))),
   titlePanel(h1("PodSearch Visuals")),
   fluidRow(
@@ -104,14 +98,17 @@ ui <- fluidPage(
                                            plotOutput(outputId = "ep_plot", width = "100%")
                                            ),
                                   tabPanel("Podcast Distribution",
+                                           h3("Genre/Category Zodiac Distribution"),
+                                           h4(textOutput(outputId = "genre_amount")),
                                            plotOutput(outputId = "genre_dist_plot", width = "100%"),
+                                           h3("Total Zodiac Podcast Distrubtion"),
                                            plotOutput(outputId = "zodiac_plot", width = "100%")
                                            ),
                                   tabPanel("Word Cloud Zodiac",
-                                           plotOutput(outputId = "word_plot", width = "100%")
+                                           wordcloud2Output(outputId = "word_plot", width = "100%")
                                   ),
                                   tabPanel("Word Cloud Genre",
-                                           plotOutput(outputId = "word_plot_2", width = "100%")
+                                           wordcloud2Output(outputId = "word_plot_2", width = "100%")
                                   )
                                   
                      ))))))
@@ -145,18 +142,27 @@ server <- function(input, output) {
     
   })
   
+  output$genre_amount <- renderText({
+    genre_df <- podsearch_df %>% 
+      filter(grepl(input$genre, categories))
+    
+    paste("There are", nrow(genre_df), "Podcasts in the", toupper(input$genre)," Genre/Category.")
+  })
+  
   output$genre_dist_plot <- renderPlot({
     
     genre_df <- podsearch_df %>% 
-      filter(grepl(input$genre, categories)) %>% 
-      group_by(categories) %>% 
+      filter(grepl(input$genre, categories))
+    
+    genre_df <- genre_df %>% 
+      group_by(zodiac) %>% 
       summarise(counts = n())
     
     genre_df %>% 
       ggplot(aes(y = counts,
-                 x = reorder(categories, -counts),
-                 fill = categories,
-                 group = categories)) +
+                 x = reorder(zodiac, -counts),
+                 fill = zodiac,
+                 group = zodiac)) +
       geom_bar(stat = "identity") +
       theme(text = element_text(size = 15, family = "mono", face = "bold")) +
       labs(title = "How many podcasts belong to each Zodiac",
@@ -191,7 +197,7 @@ server <- function(input, output) {
                      color = "#F2EDF9")
   })
   
-  output$word_plot <- renderPlot({
+  output$word_plot <- renderWordcloud2({
     
     validate(
       need(input$zodiac != "None", "Please select Zodiac")
@@ -215,12 +221,12 @@ server <- function(input, output) {
     words <- sort(rowSums(matrix), decreasing = TRUE)
     df <- data.frame(word = names(words), freq = words)
     
-    wordcloud(words = df$word, freq = df$freq, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
+    #wordcloud(words = df$word, freq = df$freq, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
     
-    #wordcloud2(data = df, size = 1.6, color = "random-dark")
+    wordcloud2(data = df, size = 1.6, color = "random-light", backgroundColor = "#291440")
   })
   
-  output$word_plot_2 <- renderPlot({
+  output$word_plot_2 <- renderWordcloud2({
     
     validate(
       need(input$genre != "None", "Please select Genre/Category")
@@ -244,9 +250,9 @@ server <- function(input, output) {
     words <- sort(rowSums(matrix), decreasing = TRUE)
     df <- data.frame(word = names(words), freq = words)
     
-    wordcloud(words = df$word, freq = df$freq, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
+    #wordcloud(words = df$word, freq = df$freq, min.freq = 1, max.words = 200, random.order = TRUE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
     
-    #wordcloud2(data = df, size = 1.6, color = "random-dark")
+    wordcloud2(data = df, size = 1.6, color = "random-light", backgroundColor = "#291440")
   })
   
 }
