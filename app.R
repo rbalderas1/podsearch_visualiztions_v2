@@ -1,12 +1,4 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
+# load libraries
 library(shiny)
 library(shinydashboard)
 library(fresh)
@@ -17,23 +9,24 @@ library(wordcloud2)
 library(RColorBrewer)
 library(tm)
 
+# reading data in
 podsearch_df <- read_csv("podsearch_df_complete_04_08_2023_v1.csv")
 
-# want to create year column
+
+# creating year column
 podsearch_df <- podsearch_df %>% 
   mutate(year = substr(birthday, 12, 16)) %>% 
   mutate(year = as.numeric(year))
 
+# creating year list
 summary(podsearch_df)
 year_list <- unique(podsearch_df$year)
 year_list <- na.omit(year_list) 
 year_list <- sort(year_list)
 
-genre_list <- c("Horror", "True Crime", "Education")
-
+# creating zodiac list
 zodiac_list <- unique(podsearch_df$zodiac)
 
-# Define UI for application that draws a histogram
 ui <- fluidPage(
   tags$head(tags$style(HTML('* {
                             font-family: "Space Mono", monospace;
@@ -70,15 +63,6 @@ ui <- fluidPage(
   titlePanel(h1("PodSearch Visuals")),
   fluidRow(
     column(2,
-           # Added slider input alternative
-           sliderInput("number_episodes_slider",
-                       "Select range of episodses:",
-                       min = 1, max = 160,
-                       value = c(1, 160)),
-           selectInput("explicit",
-                       "Explicit:",
-                       c("None",
-                         c("explicit", "not explicit"))),
            selectInput("zodiac",
                        "Zodiac:",
                        c("None",
@@ -93,12 +77,15 @@ ui <- fluidPage(
                                   tabPanel("Timeline",
                                            h4("Select Zodiac to Highlight in Timeline"),
                                              plotOutput(outputId = "time_plot", width = "100%"),
+                                           h2(""),
                                            plotOutput(outputId = "genre_time_plot", width = "100%")
-                                  ),
-                                  tabPanel("Episode Distribution",
-                                           plotOutput(outputId = "ep_plot", width = "100%")
                                            ),
-                                  tabPanel("Podcast Distribution",
+                                  tabPanel("Episode and Explicit Distribution",
+                                           plotOutput(outputId = "ep_plot", width = "100%"),
+                                           h2(""),
+                                           plotOutput(outputId = "explicit_plot", width = "100%")
+                                           ),
+                                  tabPanel("Zodiac Distribution",
                                            h3("Genre/Category Zodiac Distribution"),
                                            h4(textOutput(outputId = "genre_amount")),
                                            plotOutput(outputId = "genre_dist_plot", width = "100%"),
@@ -107,10 +94,12 @@ ui <- fluidPage(
                                            ),
                                   tabPanel("Word Cloud Zodiac",
                                            h3("Zodiac Word Cloud"),
+                                           h5("Choose a Zodiac to change the word cloud!"),
                                            wordcloud2Output(outputId = "word_plot", width = "100%")
                                   ),
                                   tabPanel("Word Cloud Genre/Category",
                                            h3("Genre/Category Word Cloud"),
+                                           h5("Choose a Genre/Category to change the word cloud!"),
                                            wordcloud2Output(outputId = "word_plot_2", width = "100%")
                                   )
                                   
@@ -121,10 +110,12 @@ server <- function(input, output) {
 
   output$time_plot <- renderPlot({
     
+    # grouping things by zodiac and year
     filtered_df <- podsearch_df %>% 
       group_by(zodiac, year) %>% 
       summarise(counts = n())
     
+    # this will plot the selected zodiac
     highlighted_line <- filtered_df %>% 
       filter(zodiac == input$zodiac)
     
@@ -138,7 +129,7 @@ server <- function(input, output) {
       geom_line(data = highlighted_line,
                 color = "purple", size = 1) +
       theme(text = element_text(size = 15, family = "mono", face = "bold")) +
-      labs(title = "How many Podcasts were released per year",
+      labs(title = "How many Podcasts were released per year by Zodiac",
            x = "Podcast Release Year",
            y = "Number of Podcasts") +
       scale_x_discrete(limits = c(2007, 2009, 2011, 2013, 2015, 2017, 2019, 2021, 2023))
@@ -147,10 +138,12 @@ server <- function(input, output) {
   
   output$genre_time_plot <- renderPlot({
     
+    # displaying error message in case no input is currently selected
     validate(
       need(input$genre != "None", "Please select Genre/Category")
     )
     
+    # filtering the df by category and grouping by year
     filtered_df <- podsearch_df %>% 
       filter(grepl(input$genre, categories)) %>% 
       group_by(year) %>% 
@@ -161,7 +154,7 @@ server <- function(input, output) {
                  y =counts)) +
       geom_line(color = "purple", size = 1) +
       theme(text = element_text(size = 15, family = "mono", face = "bold")) +
-      labs(title = "How many Podcasts were released per year",
+      labs(title = paste("How many",  toupper(input$genre),"Podcasts were released per year"),
            x = "Podcast Release Year",
            y = "Number of Podcasts") +
       scale_x_discrete(limits = c(2007, 2009, 2011, 2013, 2015, 2017, 2019, 2021, 2023))
@@ -169,6 +162,8 @@ server <- function(input, output) {
   })
   
   output$genre_amount <- renderText({
+    
+    # This is to show how many podcasts contain the selected genre/category since there is a lot of overlap between filters
     genre_df <- podsearch_df %>% 
       filter(grepl(input$genre, categories))
     
@@ -177,6 +172,7 @@ server <- function(input, output) {
   
   output$genre_dist_plot <- renderPlot({
     
+    # this is to show how the zodiac distribution of a selected genre/category
     genre_df <- podsearch_df %>% 
       filter(grepl(input$genre, categories))
     
@@ -190,8 +186,9 @@ server <- function(input, output) {
                  fill = zodiac,
                  group = zodiac)) +
       geom_bar(stat = "identity") +
-      theme(text = element_text(size = 15, family = "mono", face = "bold")) +
-      labs(title = "How many podcasts belong to each Zodiac",
+      theme(text = element_text(size = 15, family = "mono", face = "bold"),
+            axis.text.x = element_text(angle = 45)) +
+      labs(title = paste(toupper(input$genre),"Zodiac Distribution"),
            x = "Zodiac",
            y = "Number of Podcasts")
     
@@ -199,6 +196,7 @@ server <- function(input, output) {
   
   output$zodiac_plot <- renderPlot({
     
+    # this is to show the zodiac distribution of all the podcast data collected
     zodiac_df <- podsearch_df %>% 
       group_by(zodiac) %>% 
       summarise(counts = n())
@@ -209,7 +207,8 @@ server <- function(input, output) {
                  fill = zodiac,
                  group = zodiac)) +
       geom_bar(stat = "identity") +
-      theme(text = element_text(size = 15, family = "mono", face = "bold")) +
+      theme(text = element_text(size = 15, family = "mono", face = "bold"),
+            axis.text.x = element_text(angle = 45)) +
       labs(title = "How many podcasts belong to each Zodiac",
            x = "Zodiac",
            y = "Number of Podcasts")
@@ -217,6 +216,8 @@ server <- function(input, output) {
   })
   
   output$ep_plot <- renderPlot({
+    
+    # basic histogram to show the episode distribution of podcasts
     podsearch_df %>% 
       ggplot(aes(x = number_episodes)) +
       geom_histogram(fill = "#A64EFF",
@@ -227,15 +228,35 @@ server <- function(input, output) {
       theme(text = element_text(size = 15, family = "mono", face = "bold"))
   })
   
+  output$explicit_plot <- renderPlot({
+    
+    # basic bar plot to show the distribution of explicit vs non explicit podcasts in the data
+    podsearch_df %>% 
+      group_by(explicit) %>% 
+      summarise(counts = n()) %>% 
+      ggplot(aes(y = counts,
+                 x = explicit)) +
+      geom_bar(stat = "identity",
+               fill = "#A64EFF") +
+      geom_label(aes(label = counts), size = 5) +
+      theme(text = element_text(size = 15, family = "mono", face = "bold")) +
+      labs(title = "Podcast Explicit Distribution",
+           x = "",
+           y = "Number of Podcasts")
+  })
+  
   output$word_plot <- renderWordcloud2({
     
+    # display error message if none is selected
     validate(
       need(input$zodiac != "None", "Please select Zodiac")
     )
     
+    # wordcloud that changed bases on zodiac input
     word_df <- podsearch_df %>% 
       filter(zodiac == input$zodiac)
     
+    # the words are gathered from the description column in the filtered df
     word_col <- Corpus(VectorSource(word_df$description))
     
     word_col <- word_col %>% 
@@ -250,21 +271,22 @@ server <- function(input, output) {
     matrix <- as.matrix(word_count)
     words <- sort(rowSums(matrix), decreasing = TRUE)
     df <- data.frame(word = names(words), freq = words)
-    
-    #wordcloud(words = df$word, freq = df$freq, min.freq = 1, max.words = 200, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
     
     wordcloud2(data = df, size = 1.6, color = "random-light", backgroundColor = "#291440")
   })
   
   output$word_plot_2 <- renderWordcloud2({
     
+    # display error message if none is selected
     validate(
       need(input$genre != "None", "Please select Genre/Category")
     )
     
+    # filtering bases on genre selected by the user
     word_df <- podsearch_df %>% 
       filter(grepl(input$genre, categories))
     
+    # the words are gathered from the description column in the filtered df
     word_col <- Corpus(VectorSource(word_df$description))
     
     word_col <- word_col %>% 
@@ -279,8 +301,6 @@ server <- function(input, output) {
     matrix <- as.matrix(word_count)
     words <- sort(rowSums(matrix), decreasing = TRUE)
     df <- data.frame(word = names(words), freq = words)
-    
-    #wordcloud(words = df$word, freq = df$freq, min.freq = 1, max.words = 200, random.order = TRUE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
     
     wordcloud2(data = df, size = 1.6, color = "random-light", backgroundColor = "#291440")
   })
