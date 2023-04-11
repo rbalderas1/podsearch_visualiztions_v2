@@ -92,7 +92,8 @@ ui <- fluidPage(
                      (tabsetPanel(type="tabs",
                                   tabPanel("Timeline",
                                            h4("Select Zodiac to Highlight in Timeline"),
-                                             plotOutput(outputId = "time_plot", width = "100%")
+                                             plotOutput(outputId = "time_plot", width = "100%"),
+                                           plotOutput(outputId = "genre_time_plot", width = "100%")
                                   ),
                                   tabPanel("Episode Distribution",
                                            plotOutput(outputId = "ep_plot", width = "100%")
@@ -105,9 +106,11 @@ ui <- fluidPage(
                                            plotOutput(outputId = "zodiac_plot", width = "100%")
                                            ),
                                   tabPanel("Word Cloud Zodiac",
+                                           h3("Zodiac Word Cloud"),
                                            wordcloud2Output(outputId = "word_plot", width = "100%")
                                   ),
-                                  tabPanel("Word Cloud Genre",
+                                  tabPanel("Word Cloud Genre/Category",
+                                           h3("Genre/Category Word Cloud"),
                                            wordcloud2Output(outputId = "word_plot_2", width = "100%")
                                   )
                                   
@@ -134,6 +137,29 @@ server <- function(input, output) {
                  color = "purple", size = 3) +
       geom_line(data = highlighted_line,
                 color = "purple", size = 1) +
+      theme(text = element_text(size = 15, family = "mono", face = "bold")) +
+      labs(title = "How many Podcasts were released per year",
+           x = "Podcast Release Year",
+           y = "Number of Podcasts") +
+      scale_x_discrete(limits = c(2007, 2009, 2011, 2013, 2015, 2017, 2019, 2021, 2023))
+    
+  })
+  
+  output$genre_time_plot <- renderPlot({
+    
+    validate(
+      need(input$genre != "None", "Please select Genre/Category")
+    )
+    
+    filtered_df <- podsearch_df %>% 
+      filter(grepl(input$genre, categories)) %>% 
+      group_by(year) %>% 
+      summarise(counts = n())
+    
+    filtered_df %>% 
+      ggplot(aes(x = year,
+                 y =counts)) +
+      geom_line(color = "purple", size = 1) +
       theme(text = element_text(size = 15, family = "mono", face = "bold")) +
       labs(title = "How many Podcasts were released per year",
            x = "Podcast Release Year",
