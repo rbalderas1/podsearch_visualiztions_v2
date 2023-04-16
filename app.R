@@ -24,6 +24,9 @@ year_list <- unique(podsearch_df$year)
 year_list <- na.omit(year_list) 
 year_list <- sort(year_list)
 
+# Title casing some columns
+podsearch_df$categories <- str_to_title(podsearch_df$categories)
+
 # creating zodiac list
 zodiac_list <- unique(podsearch_df$zodiac)
 
@@ -70,7 +73,7 @@ ui <- fluidPage(
            selectInput("genre",
                        "Genre/Category:",
                        c("None",
-                         c("art", "business", "christianity", "comedy", "education", "fiction", "health", "history", "kids", "leisure", "music", "news", "religion", "science", "society", "spirituality", "sports", "technology", "tv")))
+                         c("Art", "Business", "Christianity", "Comedy", "Education", "Fiction", "Health", "History", "Kids", "Leisure", "Music", "News", "Religion", "Science", "Society", "Spirituality", "Sports", "Technology", "Tv")))
            ),
     mainPanel(column(12, 
                      (tabsetPanel(type="tabs",
