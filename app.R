@@ -33,6 +33,8 @@ zodiac_list <- unique(podsearch_df$zodiac)
 # cleaning description
 podsearch_df$description <- gsub("<.*?>", " ", podsearch_df$description)
 
+# UI ####################
+
 ui <- fluidPage(
   tags$head(tags$style(HTML('* {
                             font-family: "Space Mono", monospace;
@@ -111,7 +113,8 @@ ui <- fluidPage(
                                   
                      ))))))
 
-# Define server logic required to draw a histogram
+# SERVER ####################
+
 server <- function(input, output) {
 
   output$time_plot <- renderPlot({
