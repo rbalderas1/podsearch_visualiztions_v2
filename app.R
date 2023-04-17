@@ -30,6 +30,9 @@ podsearch_df$categories <- str_to_title(podsearch_df$categories)
 # creating zodiac list
 zodiac_list <- unique(podsearch_df$zodiac)
 
+# cleaning description
+podsearch_df$description <- gsub("<.*?>", " ", podsearch_df$description)
+
 ui <- fluidPage(
   tags$head(tags$style(HTML('* {
                             font-family: "Space Mono", monospace;
